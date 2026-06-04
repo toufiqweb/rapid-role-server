@@ -32,7 +32,16 @@ async function run() {
 
     const db = client.db("RapidRole");
     const jobsCollection = db.collection("jobs");
+    const companiesCollection = db.collection("companies");
 
+
+
+
+
+
+
+
+    // jobs
     app.post("/api/jobs", async (req, res) => {
       const job = req.body;
       const result = await jobsCollection.insertOne(job);
@@ -51,6 +60,28 @@ async function run() {
       const result = await jobsCollection.find(query).toArray();
       res.json(result);
     });
+
+
+
+
+
+    // companies
+    app.post("/api/companies", async (req, res) => {
+      const company = req.body;
+      const result = await companiesCollection.insertOne(company);
+      res.json(result);
+    })
+
+    app.get("/api/my/companies", async (req, res) => {
+      
+      const query = {}
+      if(req.query.recruiterId){
+        query.recruiterId = req.query.recruiterId
+      }
+      const result = await companiesCollection.findOne(query);
+      res.json(result);
+    })
+
 
     await client.db("admin").command({ ping: 1 });
     console.log(
