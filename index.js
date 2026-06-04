@@ -33,7 +33,6 @@ async function run() {
     const db = client.db("RapidRole");
     const jobsCollection = db.collection("jobs");
 
-
     app.post("/api/jobs", async (req, res) => {
       const job = req.body;
       const result = await jobsCollection.insertOne(job);
@@ -41,9 +40,16 @@ async function run() {
     });
 
     app.get("/api/jobs", async (req, res) => {
-      const cursor = jobsCollection.find();
-      const jobs = await cursor.toArray();
-      res.json(jobs);
+      const query = {};
+      if (req.query.companyId) {
+        query.companyId = req.query.companyId;
+      }
+      if (req.query.status) {
+        query.status = req.query.status;
+      }
+
+      const result = await jobsCollection.find(query).toArray();
+      res.json(result);
     });
 
     await client.db("admin").command({ ping: 1 });
