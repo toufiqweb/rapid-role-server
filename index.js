@@ -33,9 +33,13 @@ async function run() {
     const db = client.db("RapidRole");
     const jobsCollection = db.collection("jobs");
     const companiesCollection = db.collection("companies");
+    const usersCollection = db.collection("user");
 
 
-
+    app.get("/api/users", async (req, res) => {
+      const result = await usersCollection.find().skip(1).toArray();
+      res.json(result);
+    });
 
 
 
@@ -44,7 +48,11 @@ async function run() {
     // jobs
     app.post("/api/jobs", async (req, res) => {
       const job = req.body;
-      const result = await jobsCollection.insertOne(job);
+      const newJob = {
+        ...job,
+        createdAt: new Date().toISOString(),
+      }
+      const result = await jobsCollection.insertOne(newJob);
       res.json(result);
     });
 
@@ -68,10 +76,18 @@ async function run() {
     // companies
     app.post("/api/companies", async (req, res) => {
       const company = req.body;
-      const result = await companiesCollection.insertOne(company);
+      const newCompany = {
+        ...company,
+        createdAt : new Date().toISOString()
+      }
+      const result = await companiesCollection.insertOne(newCompany);
       res.json(result);
     })
 
+    app.get("/api/companies", async (req, res) => {
+      const result = await companiesCollection.find().skip(1).toArray();
+      res.json(result);
+    })
     app.get("/api/my/companies", async (req, res) => {
       
       const query = {}
@@ -79,7 +95,7 @@ async function run() {
         query.recruiterId = req.query.recruiterId
       }
       const result = await companiesCollection.findOne(query);
-      res.json(result);
+      res.json(result || {});
     })
 
 
