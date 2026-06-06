@@ -35,15 +35,10 @@ async function run() {
     const companiesCollection = db.collection("companies");
     const usersCollection = db.collection("user");
 
-
     app.get("/api/users", async (req, res) => {
       const result = await usersCollection.find().skip(1).toArray();
       res.json(result);
     });
-
-
-
-
 
     // jobs
     app.post("/api/jobs", async (req, res) => {
@@ -51,53 +46,88 @@ async function run() {
       const newJob = {
         ...job,
         createdAt: new Date().toISOString(),
-      }
+      };
       const result = await jobsCollection.insertOne(newJob);
       res.json(result);
     });
 
     app.get("/api/jobs", async (req, res) => {
       const query = {};
+
       if (req.query.companyId) {
         query.companyId = req.query.companyId;
       }
+
       if (req.query.status) {
         query.status = req.query.status;
       }
 
+      if (req.query.jobType) {
+        query.jobType = req.query.jobType;
+      }
+
+      if (req.query.jobCategory) {
+        query.jobCategory = req.query.jobCategory;
+      }
+
+      if (req.query.location) {
+        query.location = {
+          $regex: req.query.location,
+          $options: "i",
+        };
+      }
+
+      if (req.query.search) {
+        query.$or = [
+          {
+            jobTitle: {
+              $regex: req.query.search,
+              $options: "i",
+            },
+          },
+          {
+            jobDescription: {
+              $regex: req.query.search,
+              $options: "i",
+            },
+          },
+        ];
+      }
+
+      if (req.query.minSalary) {
+        query.salaryMax = {
+          $gte: Number(req.query.minSalary),
+        };
+      }
+
       const result = await jobsCollection.find(query).toArray();
+
       res.json(result);
     });
-
-
-
-
 
     // companies
     app.post("/api/companies", async (req, res) => {
       const company = req.body;
       const newCompany = {
         ...company,
-        createdAt : new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      };
       const result = await companiesCollection.insertOne(newCompany);
       res.json(result);
-    })
+    });
 
     app.get("/api/companies", async (req, res) => {
       const result = await companiesCollection.find().skip(1).toArray();
       res.json(result);
-    })
+    });
     app.get("/api/my/companies", async (req, res) => {
-      
-      const query = {}
-      if(req.query.recruiterId){
-        query.recruiterId = req.query.recruiterId
+      const query = {};
+      if (req.query.recruiterId) {
+        query.recruiterId = req.query.recruiterId;
       }
       const result = await companiesCollection.findOne(query);
       res.json(result || {});
-    })
-
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
