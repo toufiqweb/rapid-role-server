@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const dotenv = require("dotenv");
 const port = process.env.PORT || 5000;
 
@@ -34,6 +34,7 @@ async function run() {
     const jobsCollection = db.collection("jobs");
     const companiesCollection = db.collection("companies");
     const usersCollection = db.collection("user");
+    const applicationsCollection = db.collection("applications");
 
     app.get("/api/users", async (req, res) => {
       const result = await usersCollection.find().skip(1).toArray();
@@ -104,6 +105,28 @@ async function run() {
 
       res.json(result);
     });
+
+    app.get("/api/jobs/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await jobsCollection.findOne(query);
+      res.json(result);
+    })
+
+
+    app.post("/api/applications", async (req, res) => {
+      const application = req.body;
+      const newApplication = {
+        ...application,
+        createdAt: new Date().toISOString(),
+      };
+      const result = await applicationsCollection.insertOne(newApplication);
+      res.json(result);
+    })
+
+
+
+
 
     // companies
     app.post("/api/companies", async (req, res) => {
