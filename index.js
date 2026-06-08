@@ -111,9 +111,9 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await jobsCollection.findOne(query);
       res.json(result);
-    })
+    });
 
-
+    // applications
     app.post("/api/applications", async (req, res) => {
       const application = req.body;
       const newApplication = {
@@ -122,11 +122,22 @@ async function run() {
       };
       const result = await applicationsCollection.insertOne(newApplication);
       res.json(result);
-    })
+    });
 
+    app.get("/api/applications", async (req, res) => {
+      const query = {};
 
+      if (req.query.applicantId) {
+        query.applicantId = req.query.applicantId;
+      }
 
+      if (req.query.jobId) {
+        query.jobId = req.query.jobId;
+      }
 
+      const result = await applicationsCollection.find(query).toArray();
+      res.json(result);
+    });
 
     // companies
     app.post("/api/companies", async (req, res) => {
