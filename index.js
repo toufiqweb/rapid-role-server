@@ -35,6 +35,8 @@ async function run() {
     const companiesCollection = db.collection("companies");
     const usersCollection = db.collection("user");
     const applicationsCollection = db.collection("applications");
+    const plansCollection = db.collection("plans");
+    const subscriptionsCollection = db.collection("subscriptions");
 
     app.get("/api/users", async (req, res) => {
       const result = await usersCollection.find().skip(1).toArray();
@@ -163,6 +165,34 @@ async function run() {
       res.json(result || {});
     });
 
+    //Plans
+    app.get("/api/plans", async (req, res) => {
+      const query = {};
+      if (req.query.planId) {
+        query.planId = req.query.planId;
+      }
+      const result = await plansCollection.findOne(query);
+      // console.log(result)
+      res.json(result);
+    });
+
+    // Subscriptions
+    app.post("/api/subscriptions", async (req, res) => {
+      const data = req.body;
+      const newSubscription = {
+        ...data,
+        createdAt: new Date().toISOString(),
+      };
+      const result = await subscriptionsCollection.insertOne(newSubscription);
+
+      const filter = { email: data.email };
+      const updateDocument = {
+        $set: {
+          plan: data.planId,
+      }};
+      const updatedDoc = await usersCollection.updateOne(filter, updateDocument);
+      res.json(updatedDoc)
+    });
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!",
