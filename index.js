@@ -151,6 +151,7 @@ async function run() {
       const result = await companiesCollection.insertOne(newCompany);
       res.json(result);
     });
+
     app.patch("/api/companies/:id", async (req, res) => {
       const id = req.params.id;
       const company = req.body;
@@ -162,11 +163,26 @@ async function run() {
       };
       const result = await companiesCollection.updateOne(filter, updateDoc);
       res.json(result);
-    })
-    app.get("/api/companies", async (req, res) => {
-      const result = await companiesCollection.find().skip(1).toArray();
-      res.json(result);
     });
+
+    // app.get("/api/companies", async (req, res) => {
+    //   const result = await companiesCollection.find().skip(1).toArray();
+    //   res.json(result);
+    // });
+    app.get("/api/companies", async (req, res) => {
+      const cursor = companiesCollection.find().skip(1);
+      const companies = await cursor.toArray();
+
+      for (const company of companies) {
+        const filter = {
+          companyId: company._id.toString(),
+        };
+        const jobCount = await jobsCollection.countDocuments(filter);
+        company.jobCount = jobCount;
+      }
+      res.json(companies);
+    });
+
     app.get("/api/my/companies", async (req, res) => {
       const query = {};
       if (req.query.recruiterId) {
@@ -200,9 +216,13 @@ async function run() {
       const updateDocument = {
         $set: {
           plan: data.planId,
-      }};
-      const updatedDoc = await usersCollection.updateOne(filter, updateDocument);
-      res.json(updatedDoc)
+        },
+      };
+      const updatedDoc = await usersCollection.updateOne(
+        filter,
+        updateDocument,
+      );
+      res.json(updatedDoc);
     });
     await client.db("admin").command({ ping: 1 });
     console.log(
