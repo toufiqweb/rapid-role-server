@@ -37,6 +37,46 @@ async function run() {
     const applicationsCollection = db.collection("applications");
     const plansCollection = db.collection("plans");
     const subscriptionsCollection = db.collection("subscriptions");
+    const sessionsCollection = db.collection("session");
+
+    // verification related
+    const verifyToken = async (req, res, next) => {
+      const header = req.headers.authorization;
+      if (!header) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const token = header.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // console.log(token , header);
+      const query = { token: token };
+      const session = await sessionsCollection.findOne(query);
+      if (!session) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const userId = session?.userId;
+      // console.log(userId);
+      const userQuery = {
+        _id: userId,
+      };
+      const user = await usersCollection.findOne(userQuery);
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      req.user = user;
+      // console.log(user);
+
+      next();
+    };
+
+    const verifySeeker = async (req, res, next) => {
+      if (req.user?.role !== "seeker") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      next();
+    };
 
     app.get("/api/users", async (req, res) => {
       const result = await usersCollection.find().skip(1).toArray();
@@ -126,20 +166,32 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/api/applications", async (req, res) => {
-      const query = {};
+    app.get(
+      "/api/applications",
+      verifyToken,
+      verifySeeker,
+      async (req, res) => {
+        const query = {};
 
-      if (req.query.applicantId) {
-        query.applicantId = req.query.applicantId;
-      }
+        if (req.query.applicantId) {
+          query.applicantId = req.query.applicantId;
 
-      if (req.query.jobId) {
-        query.jobId = req.query.jobId;
-      }
+          //check
+          if (req.user._id.toString() !== req.query.applicantId) {
+            return res.status(403).json({ message: "Forbidden" });
+          }
 
-      const result = await applicationsCollection.find(query).toArray();
-      res.json(result);
-    });
+          
+        }
+
+        if (req.query.jobId) {
+          query.jobId = req.query.jobId;
+        }
+
+        const result = await applicationsCollection.find(query).toArray();
+        res.json(result);
+      },
+    );
 
     // companies
     app.post("/api/companies", async (req, res) => {
@@ -169,7 +221,7 @@ async function run() {
     //   const result = await companiesCollection.find().skip(1).toArray();
     //   res.json(result);
     // });
-    app.get("/api/companies", async (req, res) => {
+    app.get("/api/companies", verifyToken, async (req, res) => {
       const cursor = companiesCollection.find().skip(1);
       const companies = await cursor.toArray();
 
