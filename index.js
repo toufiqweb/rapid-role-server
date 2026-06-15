@@ -70,6 +70,7 @@ async function run() {
 
       next();
     };
+    // must be used after verifyToken middleware
 
     const verifySeeker = async (req, res, next) => {
       if (req.user?.role !== "seeker") {
@@ -77,11 +78,25 @@ async function run() {
       }
       next();
     };
+    // must be used after verifyToken middleware
+    const verifyAdmin = async (req, res, next) => {
+      if (req.user?.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      next();
+    };
+    // must be used after verifyToken middleware
+    const verifyRecruiter = async (req, res, next) => {
+      if (req.user?.role !== "recruiter") {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      next();
+    };
 
-    app.get("/api/users", async (req, res) => {
-      const result = await usersCollection.find().skip(1).toArray();
-      res.json(result);
-    });
+    // app.get("/api/users", async (req, res) => {
+    //   const result = await usersCollection.find().skip(1).toArray();
+    //   res.json(result);
+    // });
 
     // jobs
     app.post("/api/jobs", async (req, res) => {
@@ -180,8 +195,6 @@ async function run() {
           if (req.user._id.toString() !== req.query.applicantId) {
             return res.status(403).json({ message: "Forbidden" });
           }
-
-          
         }
 
         if (req.query.jobId) {
@@ -204,18 +217,23 @@ async function run() {
       res.json(result);
     });
 
-    app.patch("/api/companies/:id", async (req, res) => {
-      const id = req.params.id;
-      const company = req.body;
-      const filter = { _id: new ObjectId(id) };
-      const updateDoc = {
-        $set: {
-          status: company.status,
-        },
-      };
-      const result = await companiesCollection.updateOne(filter, updateDoc);
-      res.json(result);
-    });
+    app.patch(
+      "/api/companies/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const company = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            status: company.status,
+          },
+        };
+        const result = await companiesCollection.updateOne(filter, updateDoc);
+        res.json(result);
+      },
+    );
 
     // app.get("/api/companies", async (req, res) => {
     //   const result = await companiesCollection.find().skip(1).toArray();
